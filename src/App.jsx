@@ -23,7 +23,6 @@ const firebaseConfig = {
   appId: "1:370880950442:web:cfb615f8a9e235f19d60d3"
 };
 
-// Initialisation
 const app = initializeApp(firebaseConfig);
 const auth = getAuth(app);
 const db = getFirestore(app);
@@ -42,7 +41,7 @@ const Navbar = () => (
           </div>
         </div>
       </div>
-      <a href="#candidature" className="inline-flex items-center rounded-full bg-white px-5 py-2 text-sm font-semibold text-black hover:bg-[#D4AF37] transition-all">
+      <a href="#candidature" className="rounded-full bg-white px-5 py-2 text-sm font-semibold text-black hover:bg-[#D4AF37] transition-all">
         Candidater
       </a>
     </div>
@@ -55,9 +54,7 @@ export default function App() {
   const [errorMessage, setErrorMessage] = useState("");
   const [formData, setFormData] = useState({
     situation: 'Entrepreneur / Dirigeant',
-    enjeu: 'Fiscalité / Optimisation / Structuration internationale',
-    delai: 'Cette semaine',
-    pret: 'Oui',
+    enjeu: 'Fiscalité / Optimisation',
     details: '',
     attentes: '',
     contactName: '',
@@ -66,28 +63,18 @@ export default function App() {
   });
 
   useEffect(() => {
-    signInAnonymously(auth)
-      .then(() => console.log("Connecté à Quarma Secure Gateway"))
-      .catch((err) => {
-        console.error(err);
-        setErrorMessage("Erreur de connexion sécurisée. Vérifiez l'activation de l'Auth Anonyme dans Firebase.");
-        setStatus('error');
-      });
-
-    const unsubscribe = onAuthStateChanged(auth, setUser);
-    return () => unsubscribe();
+    signInAnonymously(auth).catch(() => {
+      setErrorMessage("Erreur Auth Firebase");
+      setStatus('error');
+    });
+    return onAuthStateChanged(auth, setUser);
   }, []);
 
   const handleSubmit = async (e) => {
     e.preventDefault();
-    if (!user) {
-      setErrorMessage("Veuillez patienter pendant la sécurisation de la connexion...");
-      setStatus('error');
-      return;
-    }
+    if (!user) return;
 
     setStatus('submitting');
-
     try {
       await addDoc(collection(db, 'applications'), {
         ...formData,
@@ -95,27 +82,34 @@ export default function App() {
         submittedAt: serverTimestamp(),
       });
 
-      await fetch("https://formsubmit.co/ajax/cellerierquentin@gmail.com", {
-        method: "POST",
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({
-            _subject: `QUARMA : Nouvelle Candidature de ${formData.contactName}`,
-            ...formData
-        })
-      });
-
       setStatus('success');
-    } catch (error) {
-      console.error(error);
-      setErrorMessage("Échec de l'envoi. Assurez-vous d'avoir créé la base 'Firestore' en mode test dans votre console Firebase.");
+    } catch (e) {
+      setErrorMessage("Erreur Firestore");
       setStatus('error');
     }
   };
 
   return (
-    <div className="min-h-screen bg-black text-white font-sans selection:bg-[#D4AF37]/30">
+    <div className="min-h-screen bg-black text-white">
       <Navbar />
-      <main className="pt-32 pb-20 px-6 max-w-6xl mx-auto">...</main>
+      <main className="pt-32 px-6 max-w-3xl mx-auto">
+        {status === 'success' ? (
+          <p className="text-center text-green-500">Dossier envoyé</p>
+        ) : (
+          <form onSubmit={handleSubmit} className="space-y-4">
+            <textarea
+              className="w-full bg-black border border-white/10 p-4 rounded-xl"
+              placeholder="Décrivez votre projet"
+              value={formData.details}
+              onChange={e => setFormData({...formData, details: e.target.value})}
+            />
+            <button className="w-full bg-white text-black py-4 rounded-xl">
+              Envoyer
+            </button>
+          </form>
+        )}
+        {status === 'error' && <p className="text-red-500">{errorMessage}</p>}
+      </main>
     </div>
   );
 }
