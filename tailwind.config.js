@@ -6,13 +6,9 @@ export default {
   ],
   theme: {
     extend: {
-      colors: {
-        gold: {
-          light: '#F3E5AB',
-          DEFAULT: '#D4AF37',
-          dark: '#B8860B',
-        }
-      }
+      fontFamily: {
+        sans: ['Inter', 'sans-serif'],
+      },
     },
   },
   plugins: [],
